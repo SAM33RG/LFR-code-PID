@@ -1,6 +1,8 @@
 
 #include <QTRSensors.h> //Pololu QTR Sensor Library. First you must download and install QTRSensors library
 
+#define isL298N 1 //change this to 1 for L298N motor driver
+
 //AF_DCMotor motor1(1, MOTOR12_1KHZ); //create motor #1 using M1 output on Motor Drive Shield, set to 1kHz PWM frequency
 //AF_DCMotor motor2(2, MOTOR12_1KHZ); //create motor #2 using M2 output on Motor Drive Shield, set to 1kHz PWM frequency
 
@@ -10,6 +12,8 @@
 #define MOT2  3
 #define MOT3  4
 #define MOT4  5
+int MOT12PWM = 0;
+int MOT34PWM = 0;
 
 #define KP 0.5 //experiment to determine this, start by something small that just makes your bot follow the line at a slow speed
 # define KD 5 //experiment to determine this, slowly increase the speeds and adjust this value. ( Note: Kp < Kd) 
@@ -20,8 +24,9 @@
 # define MIDDLE_SENSOR 4 //number of middle sensor used
 # define NUM_SENSORS 5 //number of sensors used
 # define TIMEOUT 2500 //waits for 2500 us for sensor outputs to go low
-# define EMITTER_PIN 8 //emitterPin is the Arduino digital pin that controls whether the IR LEDs are on or off. Emitter is controlled by digital pin 2
+# define EMITTER_PIN 8 //emitterPin is the Arduino digital pin that controls whether the IR LEDs are on or off.
 # define DEBUG 1
+
 
 //sensors 0 through 5 are connected to analog inputs 0 through 5, respectively
 QTRSensorsRC qtrrc((unsigned char[]) {
@@ -69,15 +74,35 @@ void set_motors(int m1, int m2) {
   motor1.run(FORWARD);
   motor2.run(FORWARD);*/
 
-
-  int pwm1 = map(abs(m1), 0, 1000, 0, 255);
-  int pwm2 = map(abs(m2), 0, 1000, 0, 255);
-  pwm1 = (m1>0) ? 255-pwm1 : pwm1;
-  pwm2 = (m2>=0) ? pwm2 : 255-pwm2; 
-  analogWrite(MOT2, pwm1);
-  analogWrite(MOT4, pwm2);
-  digitalWrite(MOT1, (m1 > 0) ? HIGH : LOW);
-  digitalWrite(MOT3, (m2 >= 0) ? LOW : HIGH);
+  if(isL298N == 0)
+  {
+    int pwm1 = map(abs(m1), 0, 1000, 0, 255);
+    int pwm2 = map(abs(m2), 0, 1000, 0, 255);
+    pwm1 = (m1>0) ? 255-pwm1 : pwm1;
+    pwm2 = (m2>=0) ? pwm2 : 255-pwm2; 
+    analogWrite(MOT2, pwm1);
+    analogWrite(MOT4, pwm2);
+    digitalWrite(MOT1, (m1 > 0) ? HIGH : LOW);
+    digitalWrite(MOT3, (m2 >= 0) ? LOW : HIGH);
+  }
+  else if(isL298N == 1)
+  {
+    int pwm1 = map(abs(m1), 0, 1000, 0, 255);
+    int pwm2 = map(abs(m2), 0, 1000, 0, 255);
+   
+    pwm1 = (m1>0) ? 255-pwm1 : pwm1;
+    pwm2 = (m2>=0) ? pwm2 : 255-pwm2; 
+    analogWrite(MOT12PWM, abs(pwm1));
+    analogWrite(MOT34PWM, abs(pwm2));
+    
+    digitalWrite(MOT1, (m1 > 0) ? HIGH : LOW);
+    digitalWrite(MOT2, (m1 > 0) ? LOW : HIGH);
+    
+    digitalWrite(MOT3, (m2 >= 0) ? LOW : HIGH);
+    digitalWrite(MOT4, (m1 >= 0) ? HIGH : LOW);
+    
+  }
+  
 }
 
 //calibrate for sometime by sliding the sensors across the line, or you may use auto-calibration instead
